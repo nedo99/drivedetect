@@ -1,0 +1,27 @@
+# Based on https://www.youtube.com/watch?v=6q5_A5wOwDM
+# Mask coordinates depend on camera position
+mask_points:
+    - [100, 720]
+    - [640, 500]
+    - [1180, 720]
+
+# Canny positions
+canny:
+  low_threshold: 200
+  high_threshold: 300
+
+# HoughLinesP parameters
+hough_lines:
+  rho: 5
+  theta: 0.0174444
+  threshold: 90
+  min_line_length: 10
+  max_line_gap: 600
+
+# GaussianBlur size
+blur_size:
+  height: 5
+  width: 5
+
+# Slope intercept used for drawing the lines
+line_slope: 0.75

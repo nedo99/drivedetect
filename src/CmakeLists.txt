@@ -1,0 +1,4 @@
+
+add_library(frame_parse frame_parse.cpp frame_config.cpp)
+
+target_link_libraries(frame_parse ${OpenCV_LIBS} yaml-cpp)

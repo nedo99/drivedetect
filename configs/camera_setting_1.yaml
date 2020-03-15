@@ -1,0 +1,28 @@
+# Based on the video from https://github.com/avinashsingh93/Finding-Lane-Lines/blob/master/test_videos/solidWhiteRight.mp4
+# and https://github.com/avinashsingh93/Finding-Lane-Lines/blob/master/test_videos/solidYellowLeft.mp4
+# Mask coordinates depend on camera position
+mask_points:
+    - [0, 540]
+    - [480, 270]
+    - [960, 540]
+
+# Canny positions
+canny:
+  low_threshold: 100
+  high_threshold: 200
+
+# HoughLinesP parameters
+hough_lines:
+  rho: 5
+  theta: 0.0523333
+  threshold: 160
+  min_line_length: 40
+  max_line_gap: 25
+
+# GaussianBlur size
+blur_size:
+  height: 1
+  width: 1
+
+# Slope intercept used for drawing the lines
+line_slope: 0.6
