@@ -148,20 +148,16 @@ void FrameParse::saveFrameToFile(Mat &frame) {
     int result;
     try
     {
-            vector<int> compression_params;
-    compression_params.push_back(IMWRITE_PNG_COMPRESSION);
-    compression_params.push_back(9);
         result = imwrite(string(filename), frame);
-        //FileStorage::write(string(filename), frame);
     }
     catch (const cv::Exception& ex)
     {
-        cout << "Could not save the frame!" << ex.what() << endl;
+        cerr << "Could not save the frame!" << ex.what() << endl;
     }
     if (result)
         cout << "Frame saved at " << filename << endl;
     else
-        cout << "Could not save the frame " << filename << endl;
+        cerr << "Could not save the frame " << filename << endl;
 }
 
 bool FrameParse::init() {
