@@ -115,7 +115,7 @@ int main(int argc, char* argv[])
         return 1;
     Mat givenImage;
     givenImage = imread(cmd_parameters[INPUT_KEY]);
-    bool isImage = false;
+
     if (givenImage.empty())
     {
         VideoCapture videoCap;

@@ -1,28 +1,46 @@
 # Based on the video from https://github.com/avinashsingh93/Finding-Lane-Lines/blob/master/test_videos/solidWhiteRight.mp4
 # and https://github.com/avinashsingh93/Finding-Lane-Lines/blob/master/test_videos/solidYellowLeft.mp4
 # Mask coordinates depend on camera position
-mask_points:
-    - [0, 540]
-    - [480, 270]
-    - [960, 540]
 
-# Canny positions
-canny:
-  low_threshold: 100
-  high_threshold: 200
+# Line detection related config
+line_detection:
+  mask_points:
+      - [0, 540]
+      - [480, 270]
+      - [960, 540]
 
-# HoughLinesP parameters
-hough_lines:
-  rho: 5
-  theta: 0.0523333
-  threshold: 160
-  min_line_length: 40
-  max_line_gap: 25
+  # Canny positions
+  canny:
+    low_threshold: 100
+    high_threshold: 200
 
-# GaussianBlur size
-blur_size:
-  height: 1
-  width: 1
+  # HoughLinesP parameters
+  hough_lines:
+    rho: 5
+    theta: 0.0523333
+    threshold: 160
+    min_line_length: 40
+    max_line_gap: 25
 
-# Slope intercept used for drawing the lines
-line_slope: 0.6
+  # GaussianBlur size
+  blur_size:
+    height: 1
+    width: 1
+
+  # Slope intercept used for drawing the lines
+  line_slope: 0.6
+
+# Object detection related config
+object_detection:
+  model: "ssd_mobilenet_v2_coco_2018_03_29.pb"
+  config: "ssd_mobilenet_v2_coco_2018_03_29.pbtxt"
+  mean: [0, 0, 0]
+  scale: 1.0
+  width: 300
+  height: 300
+  rgb: true
+  classes: "object_detection_classes_coco.txt"
+  # Confidence threshold
+  cnf_threshold: 0.5
+  # Non-maximum suppression threshold
+  nms_threshold: 0.4

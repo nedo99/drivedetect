@@ -1,27 +1,45 @@
 # Based on https://www.youtube.com/watch?v=6q5_A5wOwDM
-# Mask coordinates depend on camera position
-mask_points:
-    - [100, 720]
-    - [640, 500]
-    - [1180, 720]
 
-# Canny positions
-canny:
-  low_threshold: 200
-  high_threshold: 300
+# Line detection related config
+line_detection:
+  # Mask coordinates depend on camera position
+  mask_points:
+      - [100, 720]
+      - [640, 500]
+      - [1180, 720]
 
-# HoughLinesP parameters
-hough_lines:
-  rho: 5
-  theta: 0.0174444
-  threshold: 90
-  min_line_length: 10
-  max_line_gap: 600
+  # Canny positions
+  canny:
+    low_threshold: 200
+    high_threshold: 300
 
-# GaussianBlur size
-blur_size:
-  height: 5
-  width: 5
+  # HoughLinesP parameters
+  hough_lines:
+    rho: 5
+    theta: 0.0174444
+    threshold: 90
+    min_line_length: 10
+    max_line_gap: 600
 
-# Slope intercept used for drawing the lines
-line_slope: 0.75
+  # GaussianBlur size
+  blur_size:
+    height: 5
+    width: 5
+
+  # Slope intercept used for drawing the lines
+  line_slope: 0.75
+
+# Object detection related config
+object_detection:
+  model: "ssd_mobilenet_v2_coco_2018_03_29.pb"
+  config: "ssd_mobilenet_v2_coco_2018_03_29.pbtxt"
+  mean: [0, 0, 0]
+  scale: 1.0
+  width: 300
+  height: 300
+  rgb: true
+  classes: "object_detection_classes_coco.txt"
+  # Confidence threshold
+  cnf_threshold: 0.5
+  # Non-maximum suppression threshold
+  nms_threshold: 0.4
