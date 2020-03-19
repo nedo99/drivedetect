@@ -5,6 +5,7 @@
 #include <filesystem>
 
 #include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
 
 #include "frame_parse.h"
 #include "frame_config.h"
@@ -90,7 +91,15 @@ static void readVideo(VideoCapture &cap) {
         cap >> frame;
         if (frame.empty())
             break;
+
         m.parseFrame(frame, export_frames);
+
+        string label = format("Camera: %.2f FPS", m.getFps());
+        putText(frame, label, Point(0, 15), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0));
+
+        label = format("Missed frames: %d", m.getMissedFrames());
+        putText(frame, label, Point(0, 30), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0));
+
         imshow("win", frame);
         // Press  ESC on keyboard to exit
 	    char c=(char)waitKey(25);

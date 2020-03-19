@@ -9,7 +9,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
-static void draw_lines(vector<Vec4i> lines, Mat &dst_image);
+static void drawLines(vector<Vec4i> lines, Mat &dst_image);
 static void drawRectangles(const vector<int> &classIds, const vector<float> &confs, const vector<Rect> &boxes, const Mat& frame,
     vector<string> classes, const vector<int> &indices);
 
@@ -41,7 +41,7 @@ static void drawRectangles(const vector<int> &classIds, const vector<float> &con
     }
 }
 
-static void draw_lines(vector<Vec4i> lines, Mat &dst_image)
+static void drawLines(vector<Vec4i> lines, Mat &dst_image)
 {
     for(uint64_t i = 0; i < lines.size(); i++)
     {
@@ -53,24 +53,36 @@ static void draw_lines(vector<Vec4i> lines, Mat &dst_image)
 FrameParse::FrameParse(const string cfgPath) {
     cfg = new FrameConfig(cfgPath);
     frameId = 0;
+    missedFrames = 0;
 }
 
-FrameParse::~FrameParse() {
-    
+float FrameParse::getFps() {
+    int counter = frameId - missedFrames;
+    tm.stop();
+    float fps = counter / tm.getTimeSec();
+    tm.start();
+    return fps;
 }
 
 void FrameParse::parseFrame(Mat &frame, bool exportFrame=false) {
     givenFrame = frame;
     if (exportFrame)
         saveFrameToFile(givenFrame);
+    
+    if (frameId == 1) {
+        tm.reset();
+        tm.start();
+    }
 
     vector<Rect> boxes = objectDetector->detectObjects(givenFrame);
     vector<Vec4i> lines = lineDetector->detectLines(givenFrame);
-    if (lines.empty())
-        saveFrameToFile(givenFrame);
     drawRectangles(objectDetector->getClassIds(), objectDetector->getConfidences(), boxes,
         givenFrame, cfg->getClasses(), objectDetector->getIndices());
-    draw_lines(lines, givenFrame);
+    drawLines(lines, givenFrame);
+    if (lines.empty()) {
+        saveFrameToFile(givenFrame);
+        missedFrames++;
+    }
     frameId++;
 }
 
@@ -115,20 +127,3 @@ bool FrameParse::init() {
     
     return true;
 }
-
-
-    /*
-    string label = format("Camera: %.2f FPS", 15);
-    putText(frame, label, Point(0, 15), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0));
-
-    label = format("Network: %.2f FPS", 15);
-    putText(frame, label, Point(0, 30), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0));
-
-    label = format("Skipped frames: %d", 6);
-    putText(frame, label, Point(0, 45), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0));
-    imshow(kWinName, frame);
-    // Press  ESC on keyboard to exit
-    char c=(char)waitKey(25);
-    if(c==27)
-        break;
-    */

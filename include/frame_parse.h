@@ -18,9 +18,10 @@ using namespace dnn;
 class FrameParse {
     public:
         FrameParse(const string cfgPath);
-        ~FrameParse();
         void parseFrame(Mat &frame, bool exportFrame);
         bool init();
+        float getFps();
+        int getMissedFrames() const {return missedFrames;}
     private:
         // methods
         void saveFrameToFile(Mat &frame);
@@ -28,10 +29,12 @@ class FrameParse {
 
         // attributes
         int frameId;
+        int missedFrames;
         Mat givenFrame;
         FrameConfig *cfg;
         Net net;
         vector<String> outNames;
         ObjectDetector *objectDetector;
         LineDetector *lineDetector;
+        TickMeter tm;
 };
