@@ -30,6 +30,9 @@ line_detection:
   # Slope intercept used for drawing the lines
   line_slope: 0.6
 
+  # Gamma cofficient used for farkening. 1.0 for no change
+  gamma_cof: 0.5
+
 # Object detection related config
 object_detection:
   model: "ssd_mobilenet_v2_coco_2018_03_29.pb"

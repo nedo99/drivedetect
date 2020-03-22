@@ -59,7 +59,7 @@ class FrameConfig {
         Size inpSize;
         bool swapRb;
         string dnn_model, dnn_config;
-        float confThreshold, nmsThreshold;
+        float confThreshold, nmsThreshold, gammaConf;
 };
 
 #endif

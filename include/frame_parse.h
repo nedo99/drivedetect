@@ -28,8 +28,8 @@ class FrameParse {
         vector<Vec4i> detectLines();
 
         // attributes
-        int frameId;
-        int missedFrames;
+        uint64_t frameId;
+        uint64_t missedFrames;
         Mat givenFrame;
         FrameConfig *cfg;
         Net net;

@@ -59,6 +59,7 @@ FrameConfig::FrameConfig(const FrameConfig &cfg) {
     swapRb = cfg.swapRb;
     confThreshold = cfg.confThreshold;
     nmsThreshold = cfg.nmsThreshold;
+    gammaConf = cfg.gammaConf;
 }
 
 bool FrameConfig::parseConfig() {
@@ -104,6 +105,7 @@ bool FrameConfig::parseLineDetectionConfig(YAML::Node config) {
         blurHeight = config[YAML_BLUR_SIZE]["height"].as<int>();
         blurWidth = config[YAML_BLUR_SIZE]["width"].as<int>();
         slopeIntercept = config[YAML_SLOPE].as<double>();
+        gammaConf = config["gamma_cof"].as<float>();
     }
     catch (YAML::BadConversion &e) {
         cerr << "Missing key or wrong attribute in yaml config!" << endl;

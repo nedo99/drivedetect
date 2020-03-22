@@ -57,9 +57,8 @@ FrameParse::FrameParse(const string cfgPath) {
 }
 
 float FrameParse::getFps() {
-    int counter = frameId - missedFrames;
     tm.stop();
-    float fps = counter / tm.getTimeSec();
+    float fps = frameId / tm.getTimeSec();
     tm.start();
     return fps;
 }
@@ -74,15 +73,15 @@ void FrameParse::parseFrame(Mat &frame, bool exportFrame=false) {
         tm.start();
     }
 
-    vector<Rect> boxes = objectDetector->detectObjects(givenFrame);
     vector<Vec4i> lines = lineDetector->detectLines(givenFrame);
-    drawRectangles(objectDetector->getClassIds(), objectDetector->getConfidences(), boxes,
-        givenFrame, cfg->getClasses(), objectDetector->getIndices());
-    drawLines(lines, givenFrame);
+    vector<Rect> boxes = objectDetector->detectObjects(givenFrame);
     if (lines.empty()) {
         saveFrameToFile(givenFrame);
         missedFrames++;
     }
+    drawRectangles(objectDetector->getClassIds(), objectDetector->getConfidences(), boxes,
+        givenFrame, cfg->getClasses(), objectDetector->getIndices());
+    drawLines(lines, givenFrame);
     frameId++;
 }
 
@@ -90,7 +89,7 @@ void FrameParse::saveFrameToFile(Mat &frame) {
     char filename[MAX_LOG_FILENAME];
     char currentDir[LOG_FILENAME];
     getcwd(currentDir, MAX_LOG_FILENAME);
-    snprintf(filename, MAX_LOG_FILENAME, "%s/%s/frame%d.jpg", currentDir, LOG_OUTPUT, frameId);
+    snprintf(filename, MAX_LOG_FILENAME, "%s/%s/frame%llu.jpg", currentDir, LOG_OUTPUT, frameId);
     int result;
     try
     {
