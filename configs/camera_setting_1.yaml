@@ -37,7 +37,7 @@ line_detection:
   additional_checks: false
 
   # Used for camera calibration for getting undistorted images
-  calibration_path: "/Users/nedim/workspace/CarND-Advanced-Lane-Lines/camera_cal"
+  calibration_path: ""
   chess_x: 9
   chess_y: 6
 
