@@ -33,6 +33,9 @@ line_detection:
   # Gamma cofficient used for farkening. 1.0 for no change
   gamma_cof: 0.5
 
+  # Enable further checks like darkening image, masking to only to yellow and white spectre
+  additional_checks: false
+
 # Object detection related config
 object_detection:
   model: "ssd_mobilenet_v2_coco_2018_03_29.pb"

@@ -4,14 +4,67 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <filesystem>
 
 // OpenCV related includes
 #include <opencv2/imgproc.hpp>
+#include <opencv2/calib3d.hpp>
 #include <opencv2/highgui.hpp>
 
 static void drawLines(vector<Vec4i> lines, Mat &dst_image);
 static void drawRectangles(const vector<int> &classIds, const vector<float> &confs, const vector<Rect> &boxes, const Mat& frame,
     vector<string> classes, const vector<int> &indices);
+static void undistortImage(const Mat &frame, Mat &outFrame, InputArrayOfArrays objPts, InputArrayOfArrays imgPts);
+static void findImagePoints(string folderPath, vector<vector<Point2f>> &corners, vector<Mat> &objPoints,
+    int rows, int cols);
+static Mat prepareObjPoints(int rows, int cols);
+static vector<Point2f> findChessCorners(Mat &gryImage, Size patternSize);
+
+static vector<Point2f> findChessCorners(Mat &gryImage, Size patternSize) {
+    vector<Point2f> corners; //this will be filled by the detected corners
+
+    bool patternfound = findChessboardCorners(gryImage, patternSize, corners, 0);
+    if(patternfound)
+        cornerSubPix(gryImage, corners, Size(11, 11), Size(-1, -1),
+            TermCriteria(TermCriteria::EPS + TermCriteria::MAX_ITER, 30, 0.1));
+
+    //drawChessboardCorners(frame, chesseSize, Mat(corners), patternfound);
+    return corners;
+}
+
+static Mat prepareObjPoints(int rows, int cols) {
+    Mat val = Mat::zeros((rows * cols), 3, CV_32FC1);
+    for (int i = 0; i < cols; i ++) {
+        for (int j = 0; j < rows; j++) {
+            int r = i * rows + j;
+            val.at<float>(r, 0) = j;
+            val.at<float>(r, 1) = i;
+        }
+    }
+    return val;
+}
+
+static void findImagePoints(string folderPath, vector<vector<Point2f>> &corners, vector<Mat> &objPoints,
+    int rows, int cols) {
+    Mat objPoint = prepareObjPoints(rows, cols);
+    for(auto& p: filesystem::directory_iterator(folderPath)) {
+        Mat image = imread(p.path());
+        cvtColor(image, image, COLOR_RGB2GRAY);
+        vector<Point2f> c = findChessCorners(image, Size(rows, cols));
+        if (c.size() != (uint32_t)objPoint.rows)
+            cerr << "Object points (" << objPoint.size() << ") do not match to image points (" << c.size() << ")!" << endl;
+        else {
+            corners.push_back(findChessCorners(image, Size(9,6)));
+            objPoints.push_back(objPoint);
+        }
+    }
+}
+
+static void undistortImage(const Mat &frame, Mat &outFrame, InputArrayOfArrays objPts, InputArrayOfArrays imgPts) {
+    static Mat cameraMatrix, distCoeffs, rvecs, tvecs;
+    calibrateCamera(objPts, imgPts, frame.size(), cameraMatrix, distCoeffs, rvecs, tvecs);
+    undistort(frame, outFrame,  cameraMatrix, distCoeffs);
+}
 
 static void drawRectangles(const vector<int> &classIds, const vector<float> &confs, const vector<Rect> &boxes,
     const Mat& frame, vector<string> classes, const vector<int> &indices)
@@ -54,6 +107,7 @@ FrameParse::FrameParse(const string cfgPath) {
     cfg = new FrameConfig(cfgPath);
     frameId = 0;
     missedFrames = 0;
+    calibrateFrame = false;
 }
 
 float FrameParse::getFps() {
@@ -64,19 +118,25 @@ float FrameParse::getFps() {
 }
 
 void FrameParse::parseFrame(Mat &frame, bool exportFrame=false) {
-    givenFrame = frame;
     if (exportFrame)
-        saveFrameToFile(givenFrame);
+        saveFrameToFile(frame);
     
     if (frameId == 1) {
         tm.reset();
         tm.start();
     }
 
+    if (calibrateFrame) {
+        static InputArrayOfArrays objPts = InputArrayOfArrays(objPoints);
+        static InputArrayOfArrays imgPts = InputArrayOfArrays(corners);
+        undistortImage(frame, givenFrame, objPts, imgPts);
+    } else
+        givenFrame = frame;
+    
     vector<Vec4i> lines = lineDetector->detectLines(givenFrame);
     vector<Rect> boxes = objectDetector->detectObjects(givenFrame);
     if (lines.empty()) {
-        saveFrameToFile(givenFrame);
+        saveFrameToFile(frame);
         missedFrames++;
     }
     drawRectangles(objectDetector->getClassIds(), objectDetector->getConfidences(), boxes,
@@ -123,6 +183,11 @@ bool FrameParse::init() {
     lineDetector = new LineDetector(*cfg);
     if (!lineDetector->init())
         return false;
+    
+    if (!cfg->calibrationPath.empty()) {
+        findImagePoints(cfg->calibrationPath, corners, objPoints, cfg->chessX, cfg->chessY);
+        calibrateFrame = true;
+    }
     
     return true;
 }

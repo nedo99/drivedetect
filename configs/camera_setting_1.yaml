@@ -5,8 +5,8 @@
 # Line detection related config
 line_detection:
   mask_points:
-      - [0, 540]
-      - [480, 270]
+      - [60, 540]
+      - [480, 300]
       - [960, 540]
 
   # Canny positions
@@ -32,6 +32,14 @@ line_detection:
 
   # Gamma cofficient used for farkening. 1.0 for no change
   gamma_cof: 0.5
+
+  # Enable further checks like darkening image, masking to only to yellow and white spectre
+  additional_checks: false
+
+  # Used for camera calibration for getting undistorted images
+  calibration_path: "/Users/nedim/workspace/CarND-Advanced-Lane-Lines/camera_cal"
+  chess_x: 9
+  chess_y: 6
 
 # Object detection related config
 object_detection:

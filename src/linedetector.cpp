@@ -91,23 +91,29 @@ vector<Vec4i> LineDetector::detectLines(const Mat &frame) {
         initFrame(frame);
     try {
         static Mat tmpFrame;
+
         cvtColor(frame, tmpFrame, COLOR_RGB2GRAY);
-
-        LUT(tmpFrame, gammaArray, tmpFrame);
+        
+        if (cfg->additionalImageProcessing) {
+            LUT(tmpFrame, gammaArray, tmpFrame);
     
-        inRange(frame, whiteLowerBound, whiteUpperBound, whiteMask);
+            inRange(frame, whiteLowerBound, whiteUpperBound, whiteMask);
 
-        inRange(frame, yellowUpperBound, yellowUpperBound, yellowMask);
+            inRange(frame, yellowUpperBound, yellowUpperBound, yellowMask);
 
-        bitwise_or(whiteMask, yellowMask, clrMask);
+            bitwise_or(whiteMask, yellowMask, clrMask);
 
-        bitwise_and(tmpFrame, clrMask, tmpFrame);
+            bitwise_and(tmpFrame, clrMask, tmpFrame);
+        }
 
         GaussianBlur(tmpFrame, tmpFrame, blur_size, 0);
 
         Canny(tmpFrame, tmpFrame, cfg->getCannyLThr(), cfg->getCannyHThr());
-        cout << "shapee " << frame.dims <<endl;
+        //imshow("tmp", tmpFrame);
+        //waitKey(0);
         bitwise_and(tmpFrame, shapeMsk, tmpFrame);
+        //imshow("tmp", tmpFrame);
+        //waitKey(0);
 
         vector<Vec4i> lines;
         HoughLinesP(tmpFrame, lines, cfg->getRho(),  cfg->getTheta(), cfg->getHlpThreshold(), cfg->getMinLineLength(), cfg->getMaxLineGap());
@@ -116,7 +122,7 @@ vector<Vec4i> LineDetector::detectLines(const Mat &frame) {
             return vector<Vec4i>();
         }
 
-        return lines;
+        return averageSlopeIntercept(lines);
     }
     catch(cv::Exception& e)
     {

@@ -40,12 +40,12 @@ class FrameConfig {
         double getSlopeIntercept() const {return slopeIntercept;}
         vector<string> getClasses() const {return classes;}
 
-        string configPath;
+        string configPath, calibrationPath;
         vector<string> classes;
         vector<Point> maskPts;
         double rho;
         double theta;
-        int hlpThreshold;
+        int hlpThreshold, chessX, chessY;
         double minLineLength;
         double maxLineGap;
         double cannyLowThreshold;
@@ -57,7 +57,7 @@ class FrameConfig {
         Scalar mean;
         float scale;
         Size inpSize;
-        bool swapRb;
+        bool swapRb, additionalImageProcessing;
         string dnn_model, dnn_config;
         float confThreshold, nmsThreshold, gammaConf;
 };

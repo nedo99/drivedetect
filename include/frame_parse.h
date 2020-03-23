@@ -37,4 +37,7 @@ class FrameParse {
         ObjectDetector *objectDetector;
         LineDetector *lineDetector;
         TickMeter tm;
+        vector<vector<Point2f>> corners;
+        vector<Mat> objPoints;
+        bool calibrateFrame;
 };

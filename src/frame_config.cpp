@@ -60,23 +60,21 @@ FrameConfig::FrameConfig(const FrameConfig &cfg) {
     confThreshold = cfg.confThreshold;
     nmsThreshold = cfg.nmsThreshold;
     gammaConf = cfg.gammaConf;
+    additionalImageProcessing = cfg.additionalImageProcessing;
+    chessY = cfg.chessY;
+    chessX = cfg.chessX;
+    calibrationPath = cfg.calibrationPath;
 }
 
 bool FrameConfig::parseConfig() {
     YAML::Node config = YAML::LoadFile(configPath);
-    for (uint64_t i = 0; i < yaml_expected_keys.size(); i ++) {
-        if (config[yaml_expected_keys[i]].IsNull()) {
-            cout << yaml_expected_keys[i] << " parameter missing in yaml config!" << endl;
-            return false;
-        }
-    }
 
-    if (config[YAML_LINE_DETECT].IsNull()) {
+    if (!config[YAML_LINE_DETECT]) {
       cerr << YAML_LINE_DETECT << " missing in yaml config!" << endl;
       return false;
     }
 
-    if (config[YAML_OBJ_DETECT].IsNull()) {
+    if (!config[YAML_OBJ_DETECT]) {
       cerr << YAML_OBJ_DETECT << " missing in yaml config!" << endl;
       return false;
     }
@@ -106,9 +104,17 @@ bool FrameConfig::parseLineDetectionConfig(YAML::Node config) {
         blurWidth = config[YAML_BLUR_SIZE]["width"].as<int>();
         slopeIntercept = config[YAML_SLOPE].as<double>();
         gammaConf = config["gamma_cof"].as<float>();
+        additionalImageProcessing = config["additional_checks"].as<bool>();
+
+        // Check for calibration part
+        if (config["calibration_path"]) {
+          calibrationPath = config["calibration_path"].as<string>();
+          chessX = config["chess_x"].as<int>();
+          chessY = config["chess_y"].as<int>();
+        }
     }
     catch (YAML::BadConversion &e) {
-        cerr << "Missing key or wrong attribute in yaml config!" << endl;
+        cerr << "Missing key or wrong attribute in yaml config!" << e.what() << endl;
         return false;
     }
 

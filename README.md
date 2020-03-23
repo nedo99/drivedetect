@@ -4,6 +4,7 @@ This application will do a simple line detection on image or video.
 
 ## Prerequisites
 
+`Unix`
 `C++17`
 `OpenCV 4.2.0`
 `yaml-cpp 0.6.3`
