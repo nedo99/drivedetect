@@ -1,13 +1,13 @@
-# Based on the video from https://github.com/avinashsingh93/Finding-Lane-Lines/blob/master/test_videos/solidWhiteRight.mp4
-# and https://github.com/avinashsingh93/Finding-Lane-Lines/blob/master/test_videos/solidYellowLeft.mp4
+# Based on the video from https://github.com/udacity/CarND-Advanced-Lane-Lines/blob/master/project_video.mp4
 # Mask coordinates depend on camera position
 
 # Line detection related config
 line_detection:
   mask_points:
-      - [60, 540]
-      - [480, 300]
-      - [960, 540]
+      - [200, 720]
+      - [600, 455]
+      - [690, 455]
+      - [1115, 720]
 
   # Canny positions
   canny:
@@ -33,24 +33,55 @@ line_detection:
   # Gamma cofficient used for farkening. 1.0 for no change
   gamma_cof: 0.5
 
-  # Enable further checks like darkening image, masking to only to yellow and white spectre
-  additional_checks: false
-
-  # Used for camera calibration for getting undistorted images
-  calibration_path: ""
-  chess_x: 9
-  chess_y: 6
+  # Enable further checks like darkening image, masking to only to yellow and white spectre, undistored image, etc
+  advanced_image_processing:
+      # Scale processing image to improve speed
+      scale: 1
+      # Used for camera calibration for getting undistorted images
+      calibration_path: "/Users/nedim/workspace/CarND-Advanced-Lane-Lines/camera_cal"
+      chess_x: 9
+      chess_y: 6
+      # Margin in pixels
+      margin: 100
+      # Number of segments for calculating lines
+      segments_number: 9
+      # meters to pixels on y axis
+      ym_per_pix: 0.0416667
+      # meters to pixels on y axis
+      xm_per_pix: 0.00528571
+      # Coordinates of quadrangle vertices in the source image.
+      src_points:
+          - [210, 720]
+          - [595, 450]
+          - [690, 450]
+          - [1110, 720]
+      # Coordinates of the corresponding quadrangle vertices in the destination image.
+      dst_points:
+          - [200, 720]
+          - [200, 0]
+          - [1000, 0]
+          - [1000, 720]
+      # Sobel configuration for x, y and xy
+      sobel:
+        x_threshold: [20, 120, 0]
+        y_threshold: [80, 200, 0]
+        xy_threshold: [80, 200, 0]
+        # combined angle threshold
+        lower_angle_threshold: 0.78539816339
+        upper_angle_threshold: 1.57079632679
+        # combined kernel size
+        comb_ksize: 15
 
 # Object detection related config
 object_detection:
-  model: "ssd_mobilenet_v2_coco_2018_03_29.pb"
-  config: "ssd_mobilenet_v2_coco_2018_03_29.pbtxt"
+  model: "/Users/nedim/workspace/clion/build/ssd_mobilenet_v2_coco_2018_03_29.pb"
+  config: "/Users/nedim/workspace/clion/build/ssd_mobilenet_v2_coco_2018_03_29.pbtxt"
   mean: [0, 0, 0]
   scale: 1.0
   width: 300
   height: 300
   rgb: true
-  classes: "object_detection_classes_coco.txt"
+  classes: "/Users/nedim/workspace/clion/build/object_detection_classes_coco.txt"
   # Confidence threshold
   cnf_threshold: 0.5
   # Non-maximum suppression threshold

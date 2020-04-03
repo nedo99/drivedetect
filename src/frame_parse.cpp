@@ -61,7 +61,7 @@ static void findImagePoints(string folderPath, vector<vector<Point2f>> &corners,
 }
 
 static void undistortImage(const Mat &frame, Mat &outFrame, InputArrayOfArrays objPts, InputArrayOfArrays imgPts) {
-    static Mat cameraMatrix, distCoeffs, rvecs, tvecs;
+    Mat cameraMatrix, distCoeffs, rvecs, tvecs;
     calibrateCamera(objPts, imgPts, frame.size(), cameraMatrix, distCoeffs, rvecs, tvecs);
     undistort(frame, outFrame,  cameraMatrix, distCoeffs);
 }
@@ -117,7 +117,7 @@ float FrameParse::getFps() {
     return fps;
 }
 
-void FrameParse::parseFrame(Mat &frame, bool exportFrame=false) {
+Mat FrameParse::parseFrame(const Mat &frame, bool exportFrame=false) {
     if (exportFrame)
         saveFrameToFile(frame);
     
@@ -125,35 +125,45 @@ void FrameParse::parseFrame(Mat &frame, bool exportFrame=false) {
         tm.reset();
         tm.start();
     }
-
-    if (calibrateFrame) {
-        static InputArrayOfArrays objPts = InputArrayOfArrays(objPoints);
-        static InputArrayOfArrays imgPts = InputArrayOfArrays(corners);
-        undistortImage(frame, givenFrame, objPts, imgPts);
-    } else
-        givenFrame = frame;
-    
-    vector<Vec4i> lines = lineDetector->detectLines(givenFrame);
-    vector<Rect> boxes = objectDetector->detectObjects(givenFrame);
-    if (lines.empty()) {
-        saveFrameToFile(frame);
-        missedFrames++;
+    vector<Rect> boxes;
+    if (cfg->additionalImageProcessing) {
+        if (cfg->advCfg.scale < 1) {
+            int newHeight = (int)(frame.rows * cfg->advCfg.scale);
+            int newWidth = (int)(frame.cols * cfg->advCfg.scale);
+            resize(frame, givenFrame, Size(newWidth, newHeight));
+        } else {
+            static InputArrayOfArrays objPts = InputArrayOfArrays(objPoints);
+            static InputArrayOfArrays imgPts = InputArrayOfArrays(corners);
+            undistortImage(frame, givenFrame, objPts, imgPts);
+        }
+        boxes = objectDetector->detectObjects(givenFrame);
+        
+        if (!lineDetector->advancedLineDetection(givenFrame)) {
+            saveFrameToFile(frame);
+            missedFrames++;
+        }
+    } else {
+        boxes = objectDetector->detectObjects(frame);
+        vector<Vec4i> lines = lineDetector->detectLines(frame);
+        if (lines.empty()) {
+            saveFrameToFile(frame);
+            missedFrames++;
+        }
+        drawLines(lines, givenFrame);
     }
+    
     drawRectangles(objectDetector->getClassIds(), objectDetector->getConfidences(), boxes,
         givenFrame, cfg->getClasses(), objectDetector->getIndices());
-    drawLines(lines, givenFrame);
     frameId++;
+    return givenFrame;
 }
 
-void FrameParse::saveFrameToFile(Mat &frame) {
-    char filename[MAX_LOG_FILENAME];
-    char currentDir[LOG_FILENAME];
-    getcwd(currentDir, MAX_LOG_FILENAME);
-    snprintf(filename, MAX_LOG_FILENAME, "%s/%s/frame%llu.jpg", currentDir, LOG_OUTPUT, frameId);
+void FrameParse::saveFrameToFile(const Mat &frame) {
+    string filename = absLogPath + "/frame_" + to_string(frameId) + ".jpg";
     int result;
     try
     {
-        result = imwrite(string(filename), frame);
+        result = imwrite(filename, frame);
     }
     catch (const cv::Exception& ex)
     {
@@ -166,7 +176,8 @@ void FrameParse::saveFrameToFile(Mat &frame) {
 }
 
 bool FrameParse::init() {
-    int ret = mkdir(LOG_OUTPUT, 0777);
+    absLogPath = filesystem::current_path().string() + '/' + LOG_OUTPUT;
+    int ret = mkdir(absLogPath.c_str(), 0777);
     if (ret == -1) {
         if (errno != EEXIST) {
             cerr << "Could not create a log directory!" << strerror(errno) << endl;
@@ -184,10 +195,22 @@ bool FrameParse::init() {
     if (!lineDetector->init())
         return false;
     
-    if (!cfg->calibrationPath.empty()) {
-        findImagePoints(cfg->calibrationPath, corners, objPoints, cfg->chessX, cfg->chessY);
+    if (!cfg->advCfg.calibrationPath.empty()) {
+        findImagePoints(cfg->advCfg.calibrationPath, corners, objPoints, cfg->advCfg.chessX, cfg->advCfg.chessY);
         calibrateFrame = true;
     }
     
     return true;
+}
+
+double FrameParse::getLastLeftCurvature() const {
+    if (lineDetector)
+        return lineDetector->getLeftCurvature();
+    return 0;
+}
+
+double FrameParse::getLastRightCurvature() const {
+    if (lineDetector)
+        return lineDetector->getRightCurvature();
+    return 0;
 }

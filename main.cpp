@@ -1,5 +1,6 @@
 #include <string>
 #include <iostream>
+#include <chrono>
 #include <map>
 #include <cstdlib>
 #include <filesystem>
@@ -34,7 +35,7 @@ static void show_usage(std::string name)
 }
 
 static bool file_exists(const string file_path) {
-    if (!filesystem::exists(file_path)) {
+    if (!std::filesystem::exists(file_path)) {
         cerr << "File " << file_path << " does not exists!" << endl;
         return false;
     }
@@ -86,35 +87,49 @@ static void readVideo(VideoCapture &cap) {
     FrameParse m(cmd_parameters[CONF_KEY]);
     if (!m.init())
         return;
-    Mat frame;
+    Mat frame, detectedFrame;
+    auto start = chrono::steady_clock::now();
     while (true) {
         cap >> frame;
         if (frame.empty())
             break;
 
-        m.parseFrame(frame, export_frames);
-
+        detectedFrame = m.parseFrame(frame, export_frames);
+        
         string label = format("Camera: %.2f FPS", m.getFps());
-        putText(frame, label, Point(0, 15), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0));
+        putText(detectedFrame, label, Point(0, 15), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0));
 
-        label = format("Missed frames: %d", m.getMissedFrames());
-        putText(frame, label, Point(0, 30), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0));
+        label = format("Missed frames: %d", (int)m.getMissedFrames());
+        putText(detectedFrame, label, Point(0, 30), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0));
+        
+        label = format("The radius of curvature: %.2fm", m.getLastLeftCurvature());
+        putText(detectedFrame, label, Point(0, 60), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(255, 255, 255));
 
-        imshow("win", frame);
+        imshow("win", detectedFrame);
         // Press  ESC on keyboard to exit
 	    char c=(char)waitKey(25);
 	    if(c==27)
 	      break;
+         
     }
     cap.release();
+    auto end = chrono::steady_clock::now();
+    cout << "-----------------------" << endl;
+    cout << "Execution time: " << chrono::duration_cast<chrono::seconds>(end - start).count() << " secs" << endl;
+    cout << "Total frames: " << m.getFramesCount() << endl;
+    cout << "Missed frames: " << m.getMissedFrames() << endl;
+    if (m.getMissedFrames())
+        cout << "Log path with missed frames: " << m.getLogPath() << endl;
+    cout << "Average FPS: " << m.getFps() << endl;
+    cout << "-----------------------" << endl;
 }
 
 static void readImage(Mat frame) {
     FrameParse m(cmd_parameters[CONF_KEY]);
     if (!m.init())
         return;
-    m.parseFrame(frame, export_frames);
-    imshow("win", frame);
+
+    imshow("win", m.parseFrame(frame, export_frames));
     waitKey(0);
 }
 

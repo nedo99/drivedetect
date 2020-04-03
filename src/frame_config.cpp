@@ -11,8 +11,21 @@ struct convert<Point> {
       return false;
     }
 
-    rhs.x = node[0].as<int>();
-    rhs.y = node[1].as<int>();
+    rhs.x = (int)node[0].as<int>();
+    rhs.y = (int)node[1].as<int>();
+    return true;
+  }
+};
+template<>
+struct convert<Point2f> {
+
+  static bool decode(const Node& node, Point2f& rhs) {
+    if(!node.IsSequence() || node.size() != 2) {
+      return false;
+    }
+
+    rhs.x = (int)node[0].as<float>();
+    rhs.y = (int)node[1].as<float>();
     return true;
   }
 };
@@ -32,6 +45,24 @@ struct convert<Scalar> {
 }
 
 static vector<string> yaml_expected_keys = {YAML_POINTS, YAML_CANNY, YAML_HOUGH_LINES, YAML_BLUR_SIZE, YAML_SLOPE, YAML_OBJ_DETECT};
+
+AdvancedFrameConfig AdvancedFrameConfig::operator=(const AdvancedFrameConfig &other) {
+    chessX = other.chessX;
+    chessY = other.chessY;
+    xThreshold = other.xThreshold;
+    yThreshold = other.yThreshold;
+    xyThreshold = other.xyThreshold;
+    calibrationPath = other.calibrationPath;
+    srcPts = other.srcPts;
+    dstPts = other.dstPts;
+    combKSize = other.combKSize;
+    angleThreshold = other.angleThreshold;
+    margin = other.margin;
+    nSegments = other.nSegments;
+    xmPerPix = other.xmPerPix;
+    ymPerPix = other.ymPerPix;
+    return *this;
+}
 
 FrameConfig::FrameConfig(string cfgPath) {
    configPath = cfgPath;
@@ -61,9 +92,7 @@ FrameConfig::FrameConfig(const FrameConfig &cfg) {
     nmsThreshold = cfg.nmsThreshold;
     gammaConf = cfg.gammaConf;
     additionalImageProcessing = cfg.additionalImageProcessing;
-    chessY = cfg.chessY;
-    chessX = cfg.chessX;
-    calibrationPath = cfg.calibrationPath;
+    advCfg = cfg.advCfg;
 }
 
 bool FrameConfig::parseConfig() {
@@ -104,17 +133,45 @@ bool FrameConfig::parseLineDetectionConfig(YAML::Node config) {
         blurWidth = config[YAML_BLUR_SIZE]["width"].as<int>();
         slopeIntercept = config[YAML_SLOPE].as<double>();
         gammaConf = config["gamma_cof"].as<float>();
-        additionalImageProcessing = config["additional_checks"].as<bool>();
 
         // Check for calibration part
-        if (config["calibration_path"]) {
-          calibrationPath = config["calibration_path"].as<string>();
-          chessX = config["chess_x"].as<int>();
-          chessY = config["chess_y"].as<int>();
+        if (config["advanced_image_processing"]) {
+            additionalImageProcessing = true;
+            YAML::Node tmpConfig = config["advanced_image_processing"];
+            advCfg.scale = tmpConfig["scale"].as<float>();
+            if (advCfg.scale > 1) {
+                cerr << "Scale value should not be > 1!" << endl;
+                return false;
+            }
+            advCfg.calibrationPath = tmpConfig["calibration_path"].as<string>();
+            advCfg.chessX = tmpConfig["chess_x"].as<int>();
+            advCfg.chessY = tmpConfig["chess_y"].as<int>();
+            advCfg.margin = (int)(tmpConfig["margin"].as<int>() * advCfg.scale);
+            advCfg.nSegments = tmpConfig["segments_number"].as<int>();
+            advCfg.xmPerPix = tmpConfig["xm_per_pix"].as<double>() * advCfg.scale;
+            advCfg.ymPerPix = tmpConfig["ym_per_pix"].as<double>() * advCfg.scale;
+            advCfg.combKSize = tmpConfig["sobel"]["comb_ksize"].as<int>();
+            advCfg.xThreshold = tmpConfig["sobel"]["x_threshold"].as<Scalar>();
+            advCfg.yThreshold = tmpConfig["sobel"]["y_threshold"].as<Scalar>();
+            advCfg.xyThreshold = tmpConfig["sobel"]["xy_threshold"].as<Scalar>();
+            advCfg.srcPts = tmpConfig["src_points"].as<vector<Point2f>>();
+            for (unsigned long i = 0; i < advCfg.srcPts.size(); i++) {
+                advCfg.srcPts[i].x = advCfg.srcPts[i].x * advCfg.scale;
+                advCfg.srcPts[i].y = advCfg.srcPts[i].y * advCfg.scale;
+            }
+            advCfg.dstPts = tmpConfig["dst_points"].as<vector<Point2f>>();
+            for (unsigned long i = 0; i < advCfg.dstPts.size(); i++) {
+                advCfg.dstPts[i].x = advCfg.dstPts[i].x * advCfg.scale;
+                advCfg.dstPts[i].y = advCfg.dstPts[i].y * advCfg.scale;
+            }
+            double lowAngleThresh, upperAngleThresh;
+            lowAngleThresh = tmpConfig["sobel"]["lower_angle_threshold"].as<double>();
+            upperAngleThresh = tmpConfig["sobel"]["upper_angle_threshold"].as<double>();
+            advCfg.angleThreshold = Scalar(lowAngleThresh, upperAngleThresh);
         }
     }
     catch (YAML::BadConversion &e) {
-        cerr << "Missing key or wrong attribute in yaml config!" << e.what() << endl;
+        cerr << "Missing key or wrong attribute in yaml config!" << endl << e.what() << endl;
         return false;
     }
 

@@ -16,6 +16,19 @@
 using namespace std;
 using namespace cv;
 
+class AdvancedFrameConfig {
+public:
+    AdvancedFrameConfig() {};
+    AdvancedFrameConfig operator=(const AdvancedFrameConfig &other);
+    
+    int combKSize, chessX, chessY, margin, nSegments;
+    Scalar xThreshold, yThreshold, xyThreshold, angleThreshold;
+    string calibrationPath;
+    vector<Point2f> srcPts, dstPts;
+    double ymPerPix, xmPerPix;
+    float scale;
+};
+
 class FrameConfig {
     public:
         FrameConfig();
@@ -40,12 +53,12 @@ class FrameConfig {
         double getSlopeIntercept() const {return slopeIntercept;}
         vector<string> getClasses() const {return classes;}
 
-        string configPath, calibrationPath;
+        string configPath;
         vector<string> classes;
         vector<Point> maskPts;
         double rho;
         double theta;
-        int hlpThreshold, chessX, chessY;
+        int hlpThreshold;
         double minLineLength;
         double maxLineGap;
         double cannyLowThreshold;
@@ -60,6 +73,7 @@ class FrameConfig {
         bool swapRb, additionalImageProcessing;
         string dnn_model, dnn_config;
         float confThreshold, nmsThreshold, gammaConf;
+        AdvancedFrameConfig advCfg;
 };
 
 #endif
