@@ -146,7 +146,7 @@ bool FrameConfig::parseLineDetectionConfig(YAML::Node config) {
             advCfg.calibrationPath = tmpConfig["calibration_path"].as<string>();
             advCfg.chessX = tmpConfig["chess_x"].as<int>();
             advCfg.chessY = tmpConfig["chess_y"].as<int>();
-            advCfg.margin = (int)(tmpConfig["margin"].as<int>() * advCfg.scale);
+            advCfg.margin = tmpConfig["margin"].as<int>();
             advCfg.nSegments = tmpConfig["segments_number"].as<int>();
             advCfg.xmPerPix = tmpConfig["xm_per_pix"].as<double>() * advCfg.scale;
             advCfg.ymPerPix = tmpConfig["ym_per_pix"].as<double>() * advCfg.scale;
