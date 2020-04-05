@@ -4,6 +4,9 @@ project(drivedetect)
 set(CMAKE_CXX_FLAGS "-Wextra -Werror -Wall")
 set(CMAKE_CXX_STANDARD 17)
 
+set(VALIDATE_PARSING 1)
+#add_compile_definitions(VALIDATE_PARSING)
+
 include_directories(include)
 
 find_package(OpenCV REQUIRED)

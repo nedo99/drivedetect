@@ -38,7 +38,7 @@ line_detection:
       # Scale processing image to improve speed
       scale: 1
       # Used for camera calibration for getting undistorted images
-      calibration_path: "/Users/nedim/workspace/CarND-Advanced-Lane-Lines/camera_cal"
+      calibration_path: "input/camera_cal"
       chess_x: 9
       chess_y: 6
       # Margin in pixels
@@ -74,14 +74,14 @@ line_detection:
 
 # Object detection related config
 object_detection:
-  model: "/Users/nedim/workspace/clion/build/ssd_mobilenet_v2_coco_2018_03_29.pb"
-  config: "/Users/nedim/workspace/clion/build/ssd_mobilenet_v2_coco_2018_03_29.pbtxt"
+  model: "ssd_mobilenet_v2_coco_2018_03_29.pb"
+  config: "ssd_mobilenet_v2_coco_2018_03_29.pbtxt"
   mean: [0, 0, 0]
   scale: 1.0
   width: 300
   height: 300
   rgb: true
-  classes: "/Users/nedim/workspace/clion/build/object_detection_classes_coco.txt"
+  classes: "object_detection_classes_coco.txt"
   # Confidence threshold
   cnf_threshold: 0.5
   # Non-maximum suppression threshold

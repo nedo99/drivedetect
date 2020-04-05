@@ -91,6 +91,7 @@ static void readVideo(VideoCapture &cap) {
     auto start = chrono::steady_clock::now();
     while (true) {
         cap >> frame;
+        
         if (frame.empty())
             break;
 
@@ -128,7 +129,6 @@ static void readImage(Mat frame) {
     FrameParse m(cmd_parameters[CONF_KEY]);
     if (!m.init())
         return;
-
     imshow("win", m.parseFrame(frame, export_frames));
     waitKey(0);
 }

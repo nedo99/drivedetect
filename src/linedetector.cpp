@@ -133,7 +133,6 @@ void LineDetector::combBinaryThresh(const Mat &frame, const Mat &gryFrame) {
     
     split(tmpFrame, labChannels);
     l_image = labChannels[0];
-
     absXYSobel(l_image);
     combineSobels();
     Mat colorBinary(combinedMask.rows, combinedMask.cols, CV_8UC3);
@@ -169,9 +168,10 @@ bool LineDetector::advancedLineDetection(Mat &frame) {
     measeureCurvature(ploty, leftFitX, rightFitX, cfg->advCfg.ymPerPix, cfg->advCfg.xmPerPix, leftCurvature, rightCurvature);
     double slopeLeft = leftFitX.at<double>(0, 0) - leftFitX.at<double>((leftFitX.rows - 1), 0);
     double slopeRight = rightFitX.at<double>(0, 0) - rightFitX.at<double>((rightFitX.rows - 1), 0);
-
-    if (abs(slopeLeft - slopeRight) > SLOPE_THRESHOLD) {
-        cerr << "Lines not parallel..." << endl;
+    double slopeDiff = abs(slopeLeft - slopeRight);
+    if (slopeDiff > SLOPE_THRESHOLD) {
+        cerr << "Lines not parallel..." << endl
+        << "Slope diff is " << slopeDiff << " comapring to threshold " << SLOPE_THRESHOLD << endl;
         return false;
     }
     computePerspectiveTransformMatrices(cfg->advCfg.srcPts, cfg->advCfg.dstPts, persimg, persImgInv);

@@ -132,9 +132,15 @@ Mat FrameParse::parseFrame(const Mat &frame, bool exportFrame=false) {
             int newWidth = (int)(frame.cols * cfg->advCfg.scale);
             resize(frame, givenFrame, Size(newWidth, newHeight));
         } else {
-            static InputArrayOfArrays objPts = InputArrayOfArrays(objPoints);
-            static InputArrayOfArrays imgPts = InputArrayOfArrays(corners);
-            undistortImage(frame, givenFrame, objPts, imgPts);
+            if (this->calibrateFrame) {
+                static InputArrayOfArrays objPts = InputArrayOfArrays(objPoints);
+                static InputArrayOfArrays imgPts = InputArrayOfArrays(corners);
+                undistortImage(frame, givenFrame, objPts, imgPts);
+            }
+            else
+            {
+                givenFrame = frame;
+            }
         }
         boxes = objectDetector->detectObjects(givenFrame);
         

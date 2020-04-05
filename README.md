@@ -1,6 +1,8 @@
-# Simple line detection application
+# Simple and advanced line and object detection application
 
-This application will do a simple line detection on image or video.
+This application will do a line and object detection on image or video.
+
+![Example frame](example_frame.png)
 
 ## Prerequisites
 

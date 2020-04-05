@@ -1,40 +1,73 @@
-# Based on https://www.youtube.com/watch?v=fkps18H3SXY 720p
-# Not fully optimized
-
 # Line detection related config
 line_detection:
-  # Mask coordinates depend on camera position
   mask_points:
       - [200, 720]
-      - [670, 360]
-      - [1110, 720]
+      - [600, 455]
+      - [690, 455]
+      - [1115, 720]
 
   # Canny positions
   canny:
-    low_threshold: 50
-    high_threshold: 100
+    low_threshold: 100
+    high_threshold: 200
 
   # HoughLinesP parameters
   hough_lines:
-    rho: 2
-    theta: 0.0174444
-    threshold: 100
-    min_line_length: 20
-    max_line_gap: 150
+    rho: 5
+    theta: 0.0523333
+    threshold: 160
+    min_line_length: 40
+    max_line_gap: 25
 
   # GaussianBlur size
   blur_size:
-    height: 5
-    width: 5
+    height: 1
+    width: 1
 
   # Slope intercept used for drawing the lines
-  line_slope: 0.7
+  line_slope: 0.6
 
   # Gamma cofficient used for farkening. 1.0 for no change
   gamma_cof: 0.5
 
-  # Enable further checks like darkening image, masking to only to yellow and white spectre
-  additional_checks: false
+  # Enable further checks like darkening image, masking to only to yellow and white spectre, undistored image, etc
+  advanced_image_processing:
+      # Scale processing image to improve speed
+      scale: 1
+      # Used for camera calibration for getting undistorted images
+      calibration_path: ""
+      chess_x: 9
+      chess_y: 6
+      # Margin in pixels
+      margin: 100
+      # Number of segments for calculating lines
+      segments_number: 9
+      # meters to pixels on y axis
+      ym_per_pix: 0.0416667
+      # meters to pixels on y axis
+      xm_per_pix: 0.00528571
+      # Coordinates of quadrangle vertices in the source image.
+      src_points:
+          - [1140, 780]
+          - [1800, 1080]
+          - [460, 1080]
+          - [930, 780]
+      # Coordinates of the corresponding quadrangle vertices in the destination image.
+      dst_points:
+          - [1800, 0]
+          - [1800, 1080]
+          - [450, 1080]
+          - [450, 0]
+      # Sobel configuration for x, y and xy
+      sobel:
+        x_threshold: [20, 120, 0]
+        y_threshold: [20, 120, 0]
+        xy_threshold: [20, 80, 0]
+        # combined angle threshold
+        lower_angle_threshold: 0
+        upper_angle_threshold: 0.78539816339
+        # combined kernel size
+        comb_ksize: 15
 
 # Object detection related config
 object_detection:
