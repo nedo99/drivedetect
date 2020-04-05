@@ -149,6 +149,7 @@ Mat FrameParse::parseFrame(const Mat &frame, bool exportFrame=false) {
             missedFrames++;
         }
     } else {
+        givenFrame = frame;
         boxes = objectDetector->detectObjects(frame);
         vector<Vec4i> lines = lineDetector->detectLines(frame);
         if (lines.empty()) {

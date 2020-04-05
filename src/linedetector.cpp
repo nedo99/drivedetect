@@ -92,17 +92,14 @@ vector<Vec4i> LineDetector::detectLines(const Mat &frame) {
         initFrame(frame);
     try {
         static Mat tmpFrame;
-        
+
         cvtColor(frame, tmpFrame, COLOR_RGB2GRAY);
         
         GaussianBlur(tmpFrame, tmpFrame, blur_size, 0);
         
         Canny(tmpFrame, tmpFrame, cfg->getCannyLThr(), cfg->getCannyHThr());
-        //imshow("tmp", tmpFrame);
-        //waitKey(0);
-        bitwise_and(frame, shapeMsk, tmpFrame);
-        //imshow("tmp", tmpFrame);
-        //waitKey(0);
+
+        bitwise_and(tmpFrame, shapeMsk, tmpFrame);
         
         vector<Vec4i> lines;
         HoughLinesP(tmpFrame, lines, cfg->getRho(),  cfg->getTheta(), cfg->getHlpThreshold(), cfg->getMinLineLength(), cfg->getMaxLineGap());
@@ -110,7 +107,7 @@ vector<Vec4i> LineDetector::detectLines(const Mat &frame) {
             cerr << "Could not find HoughLinesP for given frame!" << endl;
             return vector<Vec4i>();
         }
-        
+
         return averageSlopeIntercept(lines);
     }
     catch(cv::Exception& e)
