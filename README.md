@@ -26,10 +26,15 @@ make -j16
 Detection configurations support simple line detection and advanced line detection.
 
 ![Simple detection](simple_detect_example.png)
-*Simple line detection*
+*Simple line detection `configs/simple_camera_settings_1.yaml`*
 ![Advanced detction](advanced_detect_example.png)
-*Advanced line detection*
+*Advanced line detection `configs/adv_camera_settings_1.yaml`*
 
 ### Models
 
 Models are based on OpenCV models. Model and classes used for development can be downloaded from this link: <https://drive.google.com/open?id=1_ZfaLfz48-zjQWfz4yYz46uUQEOjHgQX>
+
+### Reference
+
+Advanced Lane Finding
+ <https://github.com/udacity/CarND-Advanced-Lane-Lines>
