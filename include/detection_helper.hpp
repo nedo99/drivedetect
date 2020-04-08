@@ -23,10 +23,8 @@ Mat linespace(int start, int end, int samples);
 Mat getFitX(const Mat &polyfit, const Mat &ploty);
 void drawLaneLines(Mat &frame, const Mat &persImg, const Mat &persFrameInv, Mat &leftFitX, Mat &rightFitX,
                    const Mat &ploty);
-void computePerspectiveTransformMatrices(const vector<Point2f> &srcPts, const vector<Point2f> &dstPts, Mat &persTransform,
-                                         Mat &persTransformInv);
 void perspectiveTransform(const Mat &frame, const vector<Point2f> &srcPts, const vector<Point2f> &dstPts,
-                          Mat &outFrame);
+                          Mat &outFrame, Mat &persTransformInv);
 bool computeLineLanes(const Mat &persImg, const Mat &nonZero, const vector<int> &histogram,
                         Mat &leftFitX, Mat &rightFitX, int margin, int nWindows);
 void scaledSobel(const Mat &sobelFrame, Mat &maskFrame, const Scalar &thres);
@@ -34,7 +32,6 @@ void scaledSobel(const Mat &sobelFrame, Mat &maskFrame, const Scalar &thres);
 
 static inline void updateImg(Mat &outImg, const Mat &y, const Mat &x, const Vec3b &clr) {
     for (int i = 0; i < x.rows; i++) {
-        //cerr << outImg.at<Vec3b>(Point(x.at<int>(i, 0), y.at<int>(i, 0))) << endl;
         outImg.at<Vec3b>(Point(x.at<int>(i, 0), y.at<int>(i, 0))) = clr;
     }
 }
@@ -56,14 +53,11 @@ static inline void getGoodIndices(const Mat &nonZero, Mat &goodIndices, float &m
             && nonZero.at<Point>(i, 0).y >= yThreshold[0] && nonZero.at<Point>(i, 0).y < yThreshold[1]) {
             goodIndices.push_back(i);
             sum += nonZero.at<Point>(i, 0).x;
-            //cerr << i << endl;
         }
     }
     // Just to guard in case there are no elements
-    if (goodIndices.rows){
-        //cerr << goodIndices.size << " mean: " << sum/goodIndices.rows << endl;
+    if (goodIndices.rows)
         mean = sum/goodIndices.rows;
-    }
 }
 
 static inline void getLeftAndRightHistMaximum(const vector<int> histogram, int &leftMax, int &rightMax) {

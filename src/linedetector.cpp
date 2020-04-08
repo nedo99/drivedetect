@@ -151,7 +151,7 @@ bool LineDetector::advancedLineDetection(Mat &frame) {
     imshow("Comb Threshold", combinedBinary);
     waitKey(0);
 #endif
-    perspectiveTransform(combinedBinary, cfg->advCfg.srcPts, cfg->advCfg.dstPts, imgPers);
+    perspectiveTransform(combinedBinary, cfg->advCfg.srcPts, cfg->advCfg.dstPts, imgPers, persImgInv);
 #if defined (VALIDATE_PARSING) && (VALIDATE_PARSING==1)
     imshow("Color Threshold", imgPers);
     waitKey(0);
@@ -171,7 +171,6 @@ bool LineDetector::advancedLineDetection(Mat &frame) {
         << "Slope diff is " << slopeDiff << " comapring to threshold " << SLOPE_THRESHOLD << endl;
         return false;
     }
-    computePerspectiveTransformMatrices(cfg->advCfg.srcPts, cfg->advCfg.dstPts, persimg, persImgInv);
     drawLaneLines(frame, imgPers, persImgInv, leftFitX, rightFitX, ploty);
     
     return true;

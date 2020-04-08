@@ -100,20 +100,17 @@ void measeureCurvature(const Mat &ploty, const Mat &leftFitX, const Mat &rightFi
     polyfit(plotyTmp, tmp, leftFitCurvature, 2);
     tmp = rightFitX * xm_per_pix;
     polyfit(plotyTmp, tmp, rightFitCurvature, 2);
-    //cerr << rightFitCurvature << endl;
     static double maxPloty, minPloty;
     minMaxLoc(ploty, &minPloty, &maxPloty);
-    // ((1 + (2*left_fit_cr[0]*y_eval*ym_per_pix + left_fit_cr[1])**2)**1.5) / np.absolute(2*left_fit_cr[0])
+
     double val1 = 2.0 * leftFitCurvature.at<double>(2, 0) * maxPloty * ym_per_pix + leftFitCurvature.at<double>(1, 0);
     double val2 = 2.0 * rightFitCurvature.at<double>(2, 0) * maxPloty * ym_per_pix + rightFitCurvature.at<double>(1, 0);
-    //cerr << val1 << endl << leftFitCurvature.at<double>(2, 0) << endl;
     val1 = pow(val1, 2) + 1;
     val1 = pow(val1, 1.5);
     val2 = pow(val2, 2) + 1;
     val2 = pow(val2, 1.5);
     leftCurvature = val1 / abs(2 * leftFitCurvature.at<double>(2, 0));
     rightCurvature = val2 / abs(2 * rightFitCurvature.at<double>(2, 0));
-    //cerr << leftCurvature << endl << "  " << rightCurvature << endl;
 }
 
 void drawLaneLines(Mat &frame, const Mat &persImg, const Mat &persFrameInv, Mat &leftFitX, Mat &rightFitX,
@@ -125,7 +122,6 @@ void drawLaneLines(Mat &frame, const Mat &persImg, const Mat &persFrameInv, Mat 
         int backIndex = leftFitX.rows - 1 - i;
         Point rightP((int)rightFitX.at<double>(backIndex, 0), (int)ploty.at<double>(backIndex, 0));
         pts[i + leftFitX.rows] = rightP;
-        //cerr << pts[i] << endl << "right " << pts[i + leftFitX.rows] << endl;
     }
 
     vector<vector<Point>> vpts;
@@ -135,20 +131,16 @@ void drawLaneLines(Mat &frame, const Mat &persImg, const Mat &persFrameInv, Mat 
     Mat newWrap;
     warpPerspective(colorWarp, newWrap, persFrameInv, Size(frame.cols, frame.rows));
     addWeighted(frame, 1.0, newWrap, 0.3, 0, frame);
-    //imshow("colorWarp", colorWarp);
-    //waitKey(0);
-}
-
-
-void computePerspectiveTransformMatrices(const vector<Point2f> &srcPts, const vector<Point2f> &dstPts, Mat &persTransform,
-                                         Mat &persTransformInv) {
-    persTransform = getPerspectiveTransform(srcPts, dstPts);
-    persTransformInv = getPerspectiveTransform(dstPts, srcPts);
+#if defined (VALIDATE_PARSING) && (VALIDATE_PARSING==1)
+    imshow("colorWarp", colorWarp);
+    waitKey(0);
+#endif
 }
 
 void perspectiveTransform(const Mat &frame, const vector<Point2f> &srcPts, const vector<Point2f> &dstPts,
-                                 Mat &outFrame) {
+                                 Mat &outFrame, Mat &persTransformInv) {
     outFrame = getPerspectiveTransform(srcPts, dstPts);
+    persTransformInv = getPerspectiveTransform(dstPts, srcPts);
     warpPerspective(frame, outFrame, outFrame, Size(frame.cols, frame.rows), INTER_LINEAR);
 }
 
@@ -213,7 +205,6 @@ bool computeLineLanes(const Mat &persImg, const Mat &nonZero, const vector<int> 
 #endif
     polyfit(leftY, leftX, leftFit, 2);
     polyfit(rightY, rightX, rightFit, 2);
-    //cerr << leftFit << rightFit << endl;
     static Mat ploty = linespace(0, persImg.rows, persImg.rows);
     leftFitX = getFitX(leftFit, ploty);
     rightFitX = getFitX(rightFit, ploty);

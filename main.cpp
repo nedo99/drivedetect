@@ -89,6 +89,13 @@ static void readVideo(VideoCapture &cap) {
         return;
     Mat frame, detectedFrame;
     auto start = chrono::steady_clock::now();
+    auto framesCount = cap.get(CAP_PROP_FRAME_COUNT);
+    auto fps = cap.get(CAP_PROP_FPS);
+    auto duration = framesCount / fps;
+    cout << "------- Video information ---" << endl
+    << "Total frames: " << framesCount << endl
+    << "Video FPS: " << fps << endl
+    << "Duration: " << duration << " secs" << endl;
     while (true) {
         cap >> frame;
         
