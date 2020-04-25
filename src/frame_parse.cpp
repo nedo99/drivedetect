@@ -5,14 +5,22 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <filesystem>
+#include <thread>
+
+#include "detection_helper.hpp"
 
 // OpenCV related includes
 #include <opencv2/imgproc.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/highgui.hpp>
 
+static mutex threadMutex;
+static deque<int> deleteThread;
+
+Mat whiteYellowMask, shapeMsk, sobelXMask, sobelYMask, sobelXYMask, combinedMask, plotyLinespace;
+
 static void drawLines(vector<Vec4i> lines, Mat &dst_image);
-static void drawRectangles(const vector<int> &classIds, const vector<float> &confs, const vector<Rect> &boxes, const Mat& frame,
+void drawRectangles(const vector<int> &classIds, const vector<float> &confs, const vector<Rect> &boxes, const Mat& frame,
     vector<string> classes, const vector<int> &indices);
 static void undistortImage(const Mat &frame, Mat &outFrame, InputArrayOfArrays objPts, InputArrayOfArrays imgPts);
 static void findImagePoints(string folderPath, vector<vector<Point2f>> &corners, vector<Mat> &objPoints,
@@ -66,7 +74,7 @@ static void undistortImage(const Mat &frame, Mat &outFrame, InputArrayOfArrays o
     undistort(frame, outFrame,  cameraMatrix, distCoeffs);
 }
 
-static void drawRectangles(const vector<int> &classIds, const vector<float> &confs, const vector<Rect> &boxes,
+void drawRectangles(const vector<int> &classIds, const vector<float> &confs, const vector<Rect> &boxes,
     const Mat& frame, vector<string> classes, const vector<int> &indices)
 {
     for (size_t i = 0; i < indices.size(); ++i)
@@ -103,11 +111,63 @@ static void drawLines(vector<Vec4i> lines, Mat &dst_image)
     }
 }
 
+void detect(Mat frame, FrameParse *obj, int threadIndex, int frameId) {
+    Mat detectedFrame, givenFrame;
+    LineDetector *lineDetector = new LineDetector(obj->getConfig(), obj->getFrameWidth(), obj->getFrameHeight());
+
+    ObjectDetector *objDetct = new ObjectDetector(*obj->cfg, obj->net);
+    vector<Rect> boxes;
+    if (obj->cfg->additionalImageProcessing) {
+        if (obj->cfg->advCfg.scale < 1) {
+            resize(frame, givenFrame, Size(obj->newWidth, obj->newHeight));
+        } else {
+            if (obj->calibrateFrame) {
+                static InputArrayOfArrays objPts = InputArrayOfArrays(obj->objPoints);
+                static InputArrayOfArrays imgPts = InputArrayOfArrays(obj->corners);
+                undistortImage(frame, givenFrame, objPts, imgPts);
+            }
+            else
+            {
+                givenFrame = frame;
+            }
+        }
+
+        //boxes = objDetct->detectObjects(frame);
+        if (!lineDetector->advancedLineDetection(givenFrame)) {
+            std::lock_guard<std::mutex> lock(threadMutex);
+            obj->saveFrameToFile(frame);
+            obj->missedFrames++;
+        }
+        obj->lastLeftCurvature = lineDetector->getLeftCurvature();
+        obj->lastRightCurvature = lineDetector->getRightCurvature();
+    } else {
+        givenFrame = frame;
+        boxes = objDetct->detectObjects(frame);
+        vector<Vec4i> lines = lineDetector->detectLines(frame);
+        if (lines.empty()) {
+            std::lock_guard<std::mutex> lock(threadMutex);
+            obj->saveFrameToFile(frame);
+            obj->missedFrames++;
+        }
+        drawLines(lines, givenFrame);
+    }
+    
+    drawRectangles(objDetct->getClassIds(), objDetct->getConfidences(), boxes,
+        givenFrame, obj->cfg->getClasses(), objDetct->getIndices());
+    std::lock_guard<std::mutex> lock(threadMutex);
+    deleteThread.push_back(frameId);
+    obj->frameId++;
+    obj->parsedFrames[frameId] = givenFrame;
+    delete lineDetector;
+    delete objDetct;
+}
+
 FrameParse::FrameParse(const string cfgPath) {
     cfg = new FrameConfig(cfgPath);
     frameId = 0;
     missedFrames = 0;
     calibrateFrame = false;
+    this->returnedIndex = 0;
 }
 
 float FrameParse::getFps() {
@@ -117,7 +177,7 @@ float FrameParse::getFps() {
     return fps;
 }
 
-Mat FrameParse::parseFrame(const Mat &frame, bool exportFrame=false) {
+Mat FrameParse::parseFrame(const Mat &frame, int frameId, bool exportFrame=false) {
     if (exportFrame)
         saveFrameToFile(frame);
     
@@ -125,43 +185,16 @@ Mat FrameParse::parseFrame(const Mat &frame, bool exportFrame=false) {
         tm.reset();
         tm.start();
     }
-    vector<Rect> boxes;
-    if (cfg->additionalImageProcessing) {
-        if (cfg->advCfg.scale < 1) {
-            int newHeight = (int)(frame.rows * cfg->advCfg.scale);
-            int newWidth = (int)(frame.cols * cfg->advCfg.scale);
-            resize(frame, givenFrame, Size(newWidth, newHeight));
-        } else {
-            if (this->calibrateFrame) {
-                static InputArrayOfArrays objPts = InputArrayOfArrays(objPoints);
-                static InputArrayOfArrays imgPts = InputArrayOfArrays(corners);
-                undistortImage(frame, givenFrame, objPts, imgPts);
-            }
-            else
-            {
-                givenFrame = frame;
-            }
-        }
-        boxes = objectDetector->detectObjects(givenFrame);
-        
-        if (!lineDetector->advancedLineDetection(givenFrame)) {
-            saveFrameToFile(frame);
-            missedFrames++;
-        }
-    } else {
-        givenFrame = frame;
-        boxes = objectDetector->detectObjects(frame);
-        vector<Vec4i> lines = lineDetector->detectLines(frame);
-        if (lines.empty()) {
-            saveFrameToFile(frame);
-            missedFrames++;
-        }
-        drawLines(lines, givenFrame);
-    }
+
+    this->threads[frameId] = thread(detect, frame, this, threads.size(), frameId);
     
-    drawRectangles(objectDetector->getClassIds(), objectDetector->getConfidences(), boxes,
-        givenFrame, cfg->getClasses(), objectDetector->getIndices());
-    frameId++;
+    if (deleteThread.size()) {
+        int threadIndex = deleteThread.front();
+        this->threads[threadIndex].join();
+        this->threads.erase(threadIndex);
+        deleteThread.pop_front();
+    }
+
     return givenFrame;
 }
 
@@ -182,7 +215,9 @@ void FrameParse::saveFrameToFile(const Mat &frame) {
         cerr << "Could not save the frame " << filename << endl;
 }
 
-bool FrameParse::init() {
+bool FrameParse::init(int frameWidth, int frameHeight) {
+    this->frameWidth = frameWidth;
+    this->frameHeight = frameHeight;
     absLogPath = filesystem::current_path().string() + '/' + LOG_OUTPUT;
     int ret = mkdir(absLogPath.c_str(), 0777);
     if (ret == -1) {
@@ -194,12 +229,17 @@ bool FrameParse::init() {
     if (!cfg->parseConfig())
         return false;
     
-    objectDetector = new ObjectDetector(*cfg);
-    if (!objectDetector->init())
-        return false;
-    
-    lineDetector = new LineDetector(*cfg);
-    if (!lineDetector->init())
+    this->net = readNet(cfg->dnn_model, cfg->dnn_config);
+    this->net.setPreferableBackend(0);
+    this->net.setPreferableTarget(0);
+    this->initFrame(frameWidth, frameHeight);
+
+    if (cfg->advCfg.scale < 1) {
+        this->newHeight = (int)(frameHeight * cfg->advCfg.scale);
+        this->newWidth = (int)(frameWidth * cfg->advCfg.scale);
+    }
+
+    if (!this->net.getUnconnectedOutLayersNames().size())
         return false;
     
     if (!cfg->advCfg.calibrationPath.empty()) {
@@ -210,14 +250,36 @@ bool FrameParse::init() {
     return true;
 }
 
-double FrameParse::getLastLeftCurvature() const {
-    if (lineDetector)
-        return lineDetector->getLeftCurvature();
-    return 0;
+void FrameParse::initFrame(int frameWidth, int frameHeight) {
+    // Optionally frame size could be written in config file
+    vector<vector<Point> > vpts;
+    vpts.push_back(cfg->maskPts);
+    Size frameSize = Size(frameWidth, frameHeight);
+    shapeMsk = Mat::zeros(frameSize, CV_8U);
+    fillPoly(shapeMsk, vpts, Scalar(255, 255, 255));
+    sobelXMask = Mat::zeros(frameWidth, frameHeight, CV_8U);
+    sobelYMask = Mat::zeros(frameWidth, frameHeight, CV_8U);
+    sobelXYMask = Mat::zeros(frameWidth, frameHeight, CV_8U);
+    combinedMask = Mat::zeros(frameWidth, frameHeight, CV_8U);
+    whiteYellowMask = Mat::zeros(frameWidth, frameHeight, CV_8U);
+    plotyLinespace = linespace(0, frameHeight, frameHeight);
 }
 
-double FrameParse::getLastRightCurvature() const {
-    if (lineDetector)
-        return lineDetector->getRightCurvature();
-    return 0;
+void FrameParse::deinit() {
+    for (auto &t: this->threads) {
+        if (t.second.joinable())
+            t.second.join();
+    }
+    this->threads.clear();
+    this->parsedFrames.clear();
+}
+
+Mat FrameParse::getNextParsedFrame() {
+    Mat ret;
+    if (this->parsedFrames.find(this->returnedIndex) != this->parsedFrames.end()) {
+        ret = this->parsedFrames[this->returnedIndex];
+        this->parsedFrames.erase(this->returnedIndex);
+        this->returnedIndex++;
+    }
+    return ret;
 }

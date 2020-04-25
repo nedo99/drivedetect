@@ -15,7 +15,7 @@
 using namespace std;
 using namespace cv;
 
-void skipSlideWindow(const Mat &nonZero, Mat &leftFitX, Mat &rightFitX, int margin);
+//void skipSlideWindow(const Mat &nonZero, Mat &leftFitX, Mat &rightFitX, int margin);
 void polyfit(const Mat& src_x, const Mat& src_y, Mat& dst, int order);
 void measeureCurvature(const Mat &ploty, const Mat &leftFitX, const Mat &rightFitX, const double &ym_per_pix, const double &xm_per_pix,
                        double &leftCurvature, double &rightCurvature);

@@ -85,41 +85,49 @@ static bool cmd_args_parser(int argc, char* argv[]) {
 
 static void readVideo(VideoCapture &cap) {
     FrameParse m(cmd_parameters[CONF_KEY]);
-    if (!m.init())
-        return;
     Mat frame, detectedFrame;
     auto start = chrono::steady_clock::now();
     auto framesCount = cap.get(CAP_PROP_FRAME_COUNT);
     auto fps = cap.get(CAP_PROP_FPS);
     auto duration = framesCount / fps;
+    auto frameWidth = cap.get(CAP_PROP_FRAME_WIDTH);
+    auto frameHeight = cap.get(CAP_PROP_FRAME_HEIGHT);
     cout << "------- Video information ---" << endl
     << "Total frames: " << framesCount << endl
     << "Video FPS: " << fps << endl
+    << "Frame size: " << frameHeight << "x" << frameWidth << endl
     << "Duration: " << duration << " secs" << endl;
+    if (!m.init(frameWidth, frameHeight))
+        return;
+    int counter = 0;
     while (true) {
         cap >> frame;
         
         if (frame.empty())
             break;
 
-        detectedFrame = m.parseFrame(frame, export_frames);
-        
-        string label = format("Camera: %.2f FPS", m.getFps());
-        putText(detectedFrame, label, Point(0, 15), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0));
+        m.parseFrame(frame, counter, export_frames);
+        counter++;
+        detectedFrame = m.getNextParsedFrame();
+        if (!detectedFrame.empty()) {
+            string label = format("Camera: %.2f FPS", m.getFps());
+            putText(detectedFrame, label, Point(0, 15), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0));
 
-        label = format("Missed frames: %d", (int)m.getMissedFrames());
-        putText(detectedFrame, label, Point(0, 30), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0));
-        
-        label = format("The radius of curvature: %.2fm", m.getLastLeftCurvature());
-        putText(detectedFrame, label, Point(0, 60), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(255, 255, 255));
+            label = format("Missed frames: %d", (int)m.getMissedFrames());
+            putText(detectedFrame, label, Point(0, 30), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0));
+            
+            label = format("The radius of curvature: %.2fm", m.getLastLeftCurvature());
+            putText(detectedFrame, label, Point(0, 60), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(255, 255, 255));
 
-        imshow("win", detectedFrame);
+            imshow("win", detectedFrame);
+        }
+
         // Press  ESC on keyboard to exit
 	    char c=(char)waitKey(25);
 	    if(c==27)
 	      break;
-         
     }
+    m.deinit();
     cap.release();
     auto end = chrono::steady_clock::now();
     cout << "-----------------------" << endl;
@@ -134,9 +142,9 @@ static void readVideo(VideoCapture &cap) {
 
 static void readImage(Mat frame) {
     FrameParse m(cmd_parameters[CONF_KEY]);
-    if (!m.init())
+    if (!m.init(frame.cols, frame.rows))
         return;
-    imshow("win", m.parseFrame(frame, export_frames));
+    imshow("win", m.parseFrame(frame, 1, export_frames));
     waitKey(0);
 }
 

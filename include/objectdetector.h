@@ -13,13 +13,12 @@ using namespace dnn;
 
 class ObjectDetector {
     public:
-        ObjectDetector(const FrameConfig &config);
-
+        ObjectDetector(const FrameConfig &config, const Net &net);
+    ~ObjectDetector();
         vector<Rect> detectObjects(const Mat &frame);
         vector<int> getClassIds() const {return classIds;}
         vector<float> getConfidences() const {return confidences;}
         vector<int> getIndices() const {return indices;}
-        bool init();
     private:
         // Methods
         void preprocess(const Mat& frame);

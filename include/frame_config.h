@@ -19,7 +19,7 @@ using namespace cv;
 class AdvancedFrameConfig {
 public:
     AdvancedFrameConfig() {};
-    AdvancedFrameConfig operator=(const AdvancedFrameConfig &other);
+    AdvancedFrameConfig& operator=(const AdvancedFrameConfig &other);
     
     int combKSize, chessX, chessY, margin, nSegments;
     Scalar xThreshold, yThreshold, xyThreshold, angleThreshold;

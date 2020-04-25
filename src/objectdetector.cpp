@@ -4,25 +4,23 @@
 #include <opencv2/imgproc.hpp>
 
 
-ObjectDetector::ObjectDetector(const FrameConfig &config) {
-    cfg = new FrameConfig(config);
+ObjectDetector::ObjectDetector(const FrameConfig &config, const Net &net) {
+    this->cfg = new FrameConfig(config);
+    this->net = net;
+    this->outNames = this->net.getUnconnectedOutLayersNames();
 }
 
-bool ObjectDetector::init() {
-    net = readNet(cfg->dnn_model, cfg->dnn_config);
-    net.setPreferableBackend(0);
-    net.setPreferableTarget(0);
-    outNames = net.getUnconnectedOutLayersNames();
-
-    if (!outNames.size())
-        return false;
-    
-    return true;
+ObjectDetector::~ObjectDetector() {
+    this->classIds.clear();
+    this->confidences.clear();
+    this->outNames.clear();
+    this->indices.clear();
+    delete this->cfg;
 }
 
 void ObjectDetector::preprocess(const Mat& frame)
 {
-    static Mat blob;
+    Mat blob;
     Size inpSize = cfg->inpSize;
     // Create a 4D blob from a frame.
     if (inpSize.width <= 0) inpSize.width = frame.cols;
@@ -41,8 +39,8 @@ void ObjectDetector::preprocess(const Mat& frame)
 
 vector<Rect> ObjectDetector::postprocess(const Mat& frame, const vector<Mat>& outs)
 {
-    static vector<int> outLayers = net.getUnconnectedOutLayers();
-    static string outLayerType = net.getLayer(outLayers[0])->type;
+    vector<int> outLayers = net.getUnconnectedOutLayers();
+    string outLayerType = net.getLayer(outLayers[0])->type;
 
     std::vector<Rect> boxes;
     if (outLayerType == "DetectionOutput")

@@ -14,8 +14,6 @@
 #define MINPIX           50
 #define UNUSED(x)        (void)(x)
 
-static Mat leftFit, rightFit;
-
 // TODO optimize
 Mat getFitX(const Mat &polyfit, const Mat &ploty) {
     Mat res(ploty.cols, 1, CV_64F);
@@ -62,6 +60,7 @@ Mat linespace(int start, int end, int samples) {
     return lineSpace;
 }
 
+/*
 void skipSlideWindow(const Mat &nonZero,
                      Mat &leftFitX, Mat &rightFitX, int margin) {
     static Mat leftX, leftY, rightX, rightY;
@@ -72,7 +71,7 @@ void skipSlideWindow(const Mat &nonZero,
     leftFitX = getFitX(leftFit, ploty);
     rightFitX = getFitX(rightFit, ploty);
 }
-
+*/
 // https://github.com/opencv/opencv/blob/fc41c18c6f27c1ae663b2b8b561235921280174c/modules/calib3d/src/chessboard.cpp
 void polyfit(const Mat& src_x, const Mat& src_y, Mat& dst, int order) {
     int npoints = src_x.checkVector(1);
@@ -94,13 +93,13 @@ void polyfit(const Mat& src_x, const Mat& src_y, Mat& dst, int order) {
 
 void measeureCurvature(const Mat &ploty, const Mat &leftFitX, const Mat &rightFitX, const double &ym_per_pix, const double &xm_per_pix,
                        double &leftCurvature, double &rightCurvature) {
-    static Mat leftFitCurvature, rightFitCurvature, tmp, plotyTmp;
+    Mat leftFitCurvature, rightFitCurvature, tmp, calcTmp;
     tmp = leftFitX * xm_per_pix;
-    plotyTmp = ploty * ym_per_pix;
-    polyfit(plotyTmp, tmp, leftFitCurvature, 2);
+    calcTmp = ploty * ym_per_pix;
+    polyfit(calcTmp, tmp, leftFitCurvature, 2);
     tmp = rightFitX * xm_per_pix;
-    polyfit(plotyTmp, tmp, rightFitCurvature, 2);
-    static double maxPloty, minPloty;
+    polyfit(calcTmp, tmp, rightFitCurvature, 2);
+    double maxPloty, minPloty;
     minMaxLoc(ploty, &minPloty, &maxPloty);
 
     double val1 = 2.0 * leftFitCurvature.at<double>(2, 0) * maxPloty * ym_per_pix + leftFitCurvature.at<double>(1, 0);
@@ -146,6 +145,7 @@ void perspectiveTransform(const Mat &frame, const vector<Point2f> &srcPts, const
 
 bool computeLineLanes(const Mat &persImg, const Mat &nonZero, const vector<int> &histogram,
                         Mat &leftFitX, Mat &rightFitX, int margin, int nWindows) {
+    Mat leftFit, rightFit;
     int leftHistMaxIndex, rightHistMaxIndex;
     getLeftAndRightHistMaximum(histogram, leftHistMaxIndex, rightHistMaxIndex);
 #if defined (VALIDATE_PARSING) && (VALIDATE_PARSING==1)
@@ -205,9 +205,9 @@ bool computeLineLanes(const Mat &persImg, const Mat &nonZero, const vector<int> 
 #endif
     polyfit(leftY, leftX, leftFit, 2);
     polyfit(rightY, rightX, rightFit, 2);
-    static Mat ploty = linespace(0, persImg.rows, persImg.rows);
-    leftFitX = getFitX(leftFit, ploty);
-    rightFitX = getFitX(rightFit, ploty);
+    Mat plotyTmp = linespace(0, persImg.rows, persImg.rows);
+    leftFitX = getFitX(leftFit, plotyTmp);
+    rightFitX = getFitX(rightFit, plotyTmp);
 #if defined (VALIDATE_PARSING) && (VALIDATE_PARSING==1)
     imshow("Line Detection", outImg);
     waitKey(0);
@@ -216,7 +216,7 @@ bool computeLineLanes(const Mat &persImg, const Mat &nonZero, const vector<int> 
 }
 
 void scaledSobel(const Mat &absSobelFrame, Mat &maskFrame, const Scalar &thres) {
-    static Mat tmpSobel, scaled;
+    Mat tmpSobel, scaled;
     scaled = 255 * absSobelFrame;
     
     double min, max;

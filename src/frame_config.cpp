@@ -46,7 +46,7 @@ struct convert<Scalar> {
 
 static vector<string> yaml_expected_keys = {YAML_POINTS, YAML_CANNY, YAML_HOUGH_LINES, YAML_BLUR_SIZE, YAML_SLOPE, YAML_OBJ_DETECT};
 
-AdvancedFrameConfig AdvancedFrameConfig::operator=(const AdvancedFrameConfig &other) {
+AdvancedFrameConfig& AdvancedFrameConfig::operator=(const AdvancedFrameConfig &other) {
     chessX = other.chessX;
     chessY = other.chessY;
     xThreshold = other.xThreshold;
@@ -62,6 +62,10 @@ AdvancedFrameConfig AdvancedFrameConfig::operator=(const AdvancedFrameConfig &ot
     xmPerPix = other.xmPerPix;
     ymPerPix = other.ymPerPix;
     return *this;
+}
+
+FrameConfig::FrameConfig() {
+    
 }
 
 FrameConfig::FrameConfig(string cfgPath) {
