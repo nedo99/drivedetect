@@ -4,6 +4,7 @@
 
 #include <opencv2/core.hpp>
 #include <opencv2/dnn.hpp>
+#include <opencv2/highgui.hpp>
 
 #include "frame_config.h"
 #include "objectdetector.h"
@@ -21,6 +22,7 @@ class FrameParse {
 public:
     FrameParse(const string cfgPath);
     Mat parseFrame(const Mat &frame, int frameId, bool exportFrame);
+    void parseVideo(VideoCapture &cap, bool exportFrame);
     Mat getNextParsedFrame();
     bool init(int frameWidth, int frameHeight);
     void deinit();
@@ -54,5 +56,6 @@ public:
     double lastLeftCurvature, lastRightCurvature;
     unordered_map<int, Mat> parsedFrames;
     unordered_map<int, thread> threads;
+    uint32_t threadCount;
     private:
 };

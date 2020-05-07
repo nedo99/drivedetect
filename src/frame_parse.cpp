@@ -111,7 +111,7 @@ static void drawLines(vector<Vec4i> lines, Mat &dst_image)
     }
 }
 
-void detect(Mat frame, FrameParse *obj, int threadIndex, int frameId) {
+void detect(Mat frame, FrameParse *obj, int frameId) {
     Mat detectedFrame, givenFrame;
     LineDetector *lineDetector = new LineDetector(obj->getConfig(), obj->getFrameWidth(), obj->getFrameHeight());
 
@@ -121,15 +121,10 @@ void detect(Mat frame, FrameParse *obj, int threadIndex, int frameId) {
         if (obj->cfg->advCfg.scale < 1) {
             resize(frame, givenFrame, Size(obj->newWidth, obj->newHeight));
         } else {
-            if (obj->calibrateFrame) {
-                static InputArrayOfArrays objPts = InputArrayOfArrays(obj->objPoints);
-                static InputArrayOfArrays imgPts = InputArrayOfArrays(obj->corners);
-                undistortImage(frame, givenFrame, objPts, imgPts);
-            }
+            if (obj->calibrateFrame)
+                undistortImage(frame, givenFrame, obj->objPoints, obj->corners);
             else
-            {
                 givenFrame = frame;
-            }
         }
 
         //boxes = objDetct->detectObjects(frame);
@@ -180,22 +175,69 @@ float FrameParse::getFps() {
 Mat FrameParse::parseFrame(const Mat &frame, int frameId, bool exportFrame=false) {
     if (exportFrame)
         saveFrameToFile(frame);
-    
-    if (frameId == 1) {
-        tm.reset();
-        tm.start();
-    }
 
-    this->threads[frameId] = thread(detect, frame, this, threads.size(), frameId);
-    
-    if (deleteThread.size()) {
-        int threadIndex = deleteThread.front();
-        this->threads[threadIndex].join();
-        this->threads.erase(threadIndex);
-        deleteThread.pop_front();
-    }
+    this->threads[frameId] = thread(detect, frame, this, frameId);
+    this->threads[frameId].join();
 
-    return givenFrame;
+    return this->getNextParsedFrame();
+}
+
+void FrameParse::parseVideo(VideoCapture &cap, bool exportFrame) {
+    auto frameWidth = cap.get(CAP_PROP_FRAME_WIDTH);
+    auto frameHeight = cap.get(CAP_PROP_FRAME_HEIGHT);
+    if (!this->init(frameWidth, frameHeight))
+        return;
+    int counter = 0;
+    Mat frame, detectedFrame;
+    while (true) {
+        if (this->threadCount >= this->threads.size()) {
+            cap >> frame;
+            if (exportFrame)
+                this->saveFrameToFile(frame);
+            
+            if (frame.empty())
+                break;
+            
+            this->threads[counter] = thread(detect, frame, this, counter);
+            counter++;
+        } else {
+            cerr << "Innnnn" << endl;
+            
+        }
+        
+        if (counter == 1) {
+            tm.reset();
+            tm.start();
+        }
+        
+        if (deleteThread.size()) {
+            int threadIndex = deleteThread.front();
+            this->threads[threadIndex].join();
+            this->threads.erase(threadIndex);
+            deleteThread.pop_front();
+        }
+
+        detectedFrame = this->getNextParsedFrame();
+        if (!detectedFrame.empty()) {
+            string label = format("Camera: %.2f FPS", this->getFps());
+            putText(detectedFrame, label, Point(0, 15), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0));
+
+            label = format("Missed frames: %d", (int)this->getMissedFrames());
+            putText(detectedFrame, label, Point(0, 30), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0));
+            
+            label = format("The radius of curvature: %.2fm", this->getLastLeftCurvature());
+            putText(detectedFrame, label, Point(0, 60), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(255, 255, 255));
+
+            imshow("win", detectedFrame);
+        }
+
+        // Press  ESC on keyboard to exit
+        char c=(char)waitKey(25);
+        if(c==27)
+          break;
+    }
+    this->deinit();
+    cap.release();
 }
 
 void FrameParse::saveFrameToFile(const Mat &frame) {
@@ -243,9 +285,15 @@ bool FrameParse::init(int frameWidth, int frameHeight) {
         return false;
     
     if (!cfg->advCfg.calibrationPath.empty()) {
+        if (!filesystem::exists(cfg->advCfg.calibrationPath)) {
+            cerr << "Calibration path " << cfg->advCfg.calibrationPath << " does not exists!" << endl;
+            return false;
+        }
         findImagePoints(cfg->advCfg.calibrationPath, corners, objPoints, cfg->advCfg.chessX, cfg->advCfg.chessY);
         calibrateFrame = true;
     }
+    
+    this->threadCount = std::thread::hardware_concurrency();
     
     return true;
 }

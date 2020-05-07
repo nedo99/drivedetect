@@ -97,38 +97,8 @@ static void readVideo(VideoCapture &cap) {
     << "Video FPS: " << fps << endl
     << "Frame size: " << frameHeight << "x" << frameWidth << endl
     << "Duration: " << duration << " secs" << endl;
-    if (!m.init(frameWidth, frameHeight))
-        return;
-    int counter = 0;
-    while (true) {
-        cap >> frame;
-        
-        if (frame.empty())
-            break;
+    m.parseVideo(cap, export_frames);
 
-        m.parseFrame(frame, counter, export_frames);
-        counter++;
-        detectedFrame = m.getNextParsedFrame();
-        if (!detectedFrame.empty()) {
-            string label = format("Camera: %.2f FPS", m.getFps());
-            putText(detectedFrame, label, Point(0, 15), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0));
-
-            label = format("Missed frames: %d", (int)m.getMissedFrames());
-            putText(detectedFrame, label, Point(0, 30), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0));
-            
-            label = format("The radius of curvature: %.2fm", m.getLastLeftCurvature());
-            putText(detectedFrame, label, Point(0, 60), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(255, 255, 255));
-
-            imshow("win", detectedFrame);
-        }
-
-        // Press  ESC on keyboard to exit
-	    char c=(char)waitKey(25);
-	    if(c==27)
-	      break;
-    }
-    m.deinit();
-    cap.release();
     auto end = chrono::steady_clock::now();
     cout << "-----------------------" << endl;
     cout << "Execution time: " << chrono::duration_cast<chrono::seconds>(end - start).count() << " secs" << endl;
