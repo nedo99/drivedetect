@@ -19,6 +19,7 @@ class FrameParse {
 public:
     FrameParse(const string cfgPath);
     Mat parseFrame(const Mat &frame, bool exportFrame);
+    void calibrateCamMatrix(const Size &frameSize);
     bool init();
     float getFps();
     uint64_t getMissedFrames() const {return missedFrames;}
@@ -34,7 +35,7 @@ private:
     // attributes
     uint64_t frameId;
     uint64_t missedFrames;
-    Mat givenFrame, scaledFrame;
+    Mat givenFrame, scaledFrame, cameraMatrix, distCoeffs;
     FrameConfig *cfg;
     Net net;
     vector<String> outNames;

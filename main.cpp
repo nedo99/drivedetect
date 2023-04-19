@@ -7,6 +7,7 @@
 
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/videoio.hpp>
 
 #include "frame_parse.h"
 #include "frame_config.h"
@@ -92,10 +93,14 @@ static void readVideo(VideoCapture &cap) {
     auto framesCount = cap.get(CAP_PROP_FRAME_COUNT);
     auto fps = cap.get(CAP_PROP_FPS);
     auto duration = framesCount / fps;
+    auto width  = cap.get(CAP_PROP_FRAME_WIDTH);
+    auto height = cap.get(CAP_PROP_FRAME_HEIGHT);
+    m.calibrateCamMatrix(Size(width, height));
     cout << "------- Video information ---" << endl
     << "Total frames: " << framesCount << endl
     << "Video FPS: " << fps << endl
-    << "Duration: " << duration << " secs" << endl;
+    << "Duration: " << duration << " secs" << endl
+    << "Frame size: " << width << "x" << height <<endl;
     while (true) {
         cap >> frame;
         

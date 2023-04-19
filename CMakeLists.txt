@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(drivedetect)
 
-set(CMAKE_CXX_FLAGS "-Wextra -Werror -Wall")
+set(CMAKE_CXX_FLAGS "-Wextra -Werror -Wall -Wno-deprecated-copy")
 set(CMAKE_CXX_STANDARD 17)
 
 set(VALIDATE_PARSING 1)

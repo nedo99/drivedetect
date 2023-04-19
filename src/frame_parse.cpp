@@ -14,7 +14,6 @@
 static void drawLines(vector<Vec4i> lines, Mat &dst_image);
 static void drawRectangles(const vector<int> &classIds, const vector<float> &confs, const vector<Rect> &boxes, const Mat& frame,
     vector<string> classes, const vector<int> &indices);
-static void undistortImage(const Mat &frame, Mat &outFrame, InputArrayOfArrays objPts, InputArrayOfArrays imgPts);
 static void findImagePoints(string folderPath, vector<vector<Point2f>> &corners, vector<Mat> &objPoints,
     int rows, int cols);
 static Mat prepareObjPoints(int rows, int cols);
@@ -58,12 +57,6 @@ static void findImagePoints(string folderPath, vector<vector<Point2f>> &corners,
             objPoints.push_back(objPoint);
         }
     }
-}
-
-static void undistortImage(const Mat &frame, Mat &outFrame, InputArrayOfArrays objPts, InputArrayOfArrays imgPts) {
-    Mat cameraMatrix, distCoeffs, rvecs, tvecs;
-    calibrateCamera(objPts, imgPts, frame.size(), cameraMatrix, distCoeffs, rvecs, tvecs);
-    undistort(frame, outFrame,  cameraMatrix, distCoeffs);
 }
 
 static void drawRectangles(const vector<int> &classIds, const vector<float> &confs, const vector<Rect> &boxes,
@@ -133,17 +126,15 @@ Mat FrameParse::parseFrame(const Mat &frame, bool exportFrame=false) {
             resize(frame, givenFrame, Size(newWidth, newHeight));
         } else {
             if (this->calibrateFrame) {
-                static InputArrayOfArrays objPts = InputArrayOfArrays(objPoints);
-                static InputArrayOfArrays imgPts = InputArrayOfArrays(corners);
-                undistortImage(frame, givenFrame, objPts, imgPts);
+                undistort(frame, givenFrame,  this->cameraMatrix, this->distCoeffs);
             }
-            else
-            {
+            else {
                 givenFrame = frame;
             }
         }
+        auto start = std::chrono::steady_clock::now();
         boxes = objectDetector->detectObjects(givenFrame);
-        
+        std::cout << "Object detection: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() << "[ms]" << std::endl;
         if (!lineDetector->advancedLineDetection(givenFrame)) {
             saveFrameToFile(frame);
             missedFrames++;
@@ -220,4 +211,15 @@ double FrameParse::getLastRightCurvature() const {
     if (lineDetector)
         return lineDetector->getRightCurvature();
     return 0;
+}
+
+void FrameParse::calibrateCamMatrix(const Size &frameSize) {
+    if (!this->calibrateFrame) {
+        return;
+    }
+    InputArrayOfArrays objPts = InputArrayOfArrays(objPoints);
+    InputArrayOfArrays imgPts = InputArrayOfArrays(corners);
+    Mat rvecs, tvecs;
+    calibrateCamera(objPts, imgPts, frameSize, cameraMatrix, distCoeffs, rvecs, tvecs);
+    std::cout<< cameraMatrix << std::endl << distCoeffs << std::endl;
 }

@@ -38,7 +38,7 @@ line_detection:
       # Scale processing image to improve speed
       scale: 1
       # Used for camera calibration for getting undistorted images
-      calibration_path: "input/camera_cal"
+      calibration_path: "../input/camera_cal"
       chess_x: 9
       chess_y: 6
       # Margin in pixels
