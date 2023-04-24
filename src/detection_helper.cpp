@@ -11,6 +11,9 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
+#include <eigen3/Eigen/Dense>
+#include <opencv2/core/eigen.hpp>
+
 #define MINPIX           50
 #define UNUSED(x)        (void)(x)
 
@@ -87,7 +90,16 @@ void polyfit(const Mat& src_x, const Mat& src_y, Mat& dst, int order) {
             A.at<double>(x, y) = srcX.at<double>(x) * A.at<double>(x, y - 1);
     }
     Mat w;
+    // Due to issue and instability with OpenCV solve method (https://github.com/opencv/opencv/issues/10084, https://github.com/opencv/opencv/issues/17824)
+    // Eigen solve was used.
+    /*
     solve(A, srcY, w, DECOMP_SVD);
+    */
+    Eigen::MatrixXf A_eigen, srcY_eigen, w_eigen;
+    cv2eigen(A, A_eigen);
+    cv2eigen(srcY, srcY_eigen);
+    w_eigen = A_eigen.bdcSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(srcY_eigen);
+    eigen2cv(w_eigen, w);
     w.convertTo(dst, ((src_x.depth() == CV_64F || src_y.depth() == CV_64F) ? CV_64F : CV_32F));
 }
 
